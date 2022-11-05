@@ -22,7 +22,7 @@ export function getDispatch(data) {
 //销售出库明细
 export function saveProStockOut(data) {
   return request({
-    url: 'SaveProStockOut',
+    url: 'BuildSaleOut',
     method: 'post',
     data
   })

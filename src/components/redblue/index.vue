@@ -44,7 +44,6 @@ export default {
     },
     onSubmit() {
       this.$store.dispatch('setShowRedBlue', false)
-
       this.$router.push({
         name: this.$store.getters.targetUrl,
         query: this.form

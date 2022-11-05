@@ -1,4 +1,4 @@
-<template lang="">
+<template>
   <div class="container">
     <van-form @submit="onSubmit" label-width="50px">
       <div class="top">
@@ -50,10 +50,9 @@
               :source="source"
               @click="onChoose(source)"
             >
-              <li style="padding: 2px">单号：{{ source.cTVCode }}</li>
-              <li style="padding: 2px">调出仓库：{{ source.cOWhName }}</li>
-              <li style="padding: 2px">调入仓库：{{ source.cIWhName }}</li>
-              <li style="padding: 2px">日期：{{ source.dTVDate }}</li>
+              <li style="padding: 2px">日期：{{ source.dDate }}</li>
+              <li style="padding: 2px">单号：{{ source.cCode }}</li>
+              <li style="padding: 2px">生产部门：{{ source.cDepCode }}||{{ source.cDepName }}</li>
             </ul>
           </van-list>
           <van-button class="reload">
@@ -90,9 +89,9 @@
 </template>
 <script>
 import dayjs from 'dayjs'
-import { getAppTransHead } from '@/api/trans'
+import { getMoHead } from '@/api/out'
 export default {
-  name: `trans`,
+  name: `out`,
   data() {
     return {
       keyword: '',
@@ -103,7 +102,8 @@ export default {
       sourceList: [],
       loading: false,
       finished: false,
-      readonly: false
+      readonly: false,
+      rob: 0
     }
   },
   computed: {
@@ -135,10 +135,10 @@ export default {
   methods: {
     onLoad() {
       this.sourceList = []
-      getAppTransHead(
+      getMoHead(
         Object.assign(
           {},
-          { dBeginDate: this.startDateStr, dEndDate: this.endDateStr },
+          { dBeginDate: this.startDateStr, dEndDate: this.endDateStr, FRob: this.rob },
           {
             cFilter: this.keyword
           }
@@ -167,12 +167,17 @@ export default {
     },
     onChoose(row) {
       this.$router.push({
-        name: 'trans_form',
-        query: Object.assign({}, row)
+        name: 'out_form',
+        query: Object.assign({}, row, {
+          bRob: this.rob,
+          redblue: this.rob
+        })
       })
     }
   },
-  created() {},
+  created() {
+    this.rob = this.$route.query.redblue
+  },
   mounted() {
     this.$nextTick(() => {
       if (this.$refs.keyword != void 0) {
@@ -197,7 +202,7 @@ export default {
   }
 }
 </script>
-<style lang="scss">
+<style lang="scss" scoped>
 .container {
   height: 100vh;
   .bottom {

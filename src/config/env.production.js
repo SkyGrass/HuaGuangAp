@@ -1,6 +1,6 @@
 // 正式
 module.exports = {
-  title: '菲斯诺',
+  title: '江苏华光',
   baseUrl: '', // 正式项目地址
   baseApi: '', // 正式api请求地址
   APPID: 'xxx',

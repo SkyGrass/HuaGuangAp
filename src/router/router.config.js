@@ -1,10 +1,9 @@
 import Home from '@/views/home'
 import In from '@/views/in'
+import Out from '@/views/out'
 import Pin from '@/views/pin'
 import So from '@/views/so'
-import Trans from '@/views/trans'
 import Stock from '@/views/stock'
-import Mould from '@/views/mould'
 /**
  * 基础路由
  * @type { *[] }
@@ -31,30 +30,11 @@ const routerMap = [
 
 const dynamicRouterMap = [
   {
-    path: '/pap',
-    name: 'pap',
-    component: () => import('@/views/pap'),
-    meta: {
-      title: '入库标签打印',
-      keepAlive: false,
-      scrollTop: 0
-    }
-  },
-  {
-    path: '/pap_form',
-    name: 'pap_form',
-    component: () => import('@/views/pap/form'),
-    meta: {
-      title: '入库标签打印',
-      keepAlive: false
-    }
-  },
-  {
     path: '/in',
     name: 'in',
     component: In,
     meta: {
-      title: '采购入库',
+      title: '采购进货',
       redblue: true,
       keepAlive: false
     }
@@ -64,7 +44,26 @@ const dynamicRouterMap = [
     name: 'in_form',
     component: () => import('@/views/in/form'),
     meta: {
-      title: '采购入库',
+      title: '采购进货',
+      keepAlive: false
+    }
+  },
+  {
+    path: '/out',
+    name: 'out',
+    component: Out,
+    meta: {
+      title: '材料出库',
+      redblue: true,
+      keepAlive: false
+    }
+  },
+  {
+    path: '/out_form',
+    name: 'out_form',
+    component: () => import('@/views/out/form'),
+    meta: {
+      title: '材料出库',
       keepAlive: false
     }
   },
@@ -109,61 +108,11 @@ const dynamicRouterMap = [
     }
   },
   {
-    path: '/trans',
-    name: 'trans',
-    component: Trans,
-    meta: {
-      title: '仓库调拨[参照申请]',
-      redblue: false,
-      keepAlive: false
-    }
-  },
-  {
-    path: '/trans_form',
-    name: 'trans_form',
-    component: () => import('@/views/trans/form'),
-    meta: {
-      title: '仓库调拨[参照申请]',
-      redblue: false,
-      keepAlive: false
-    }
-  },
-  {
-    path: '/trans_n',
-    name: 'tran_n',
-    component: () => import('@/views/trans/form_n'),
-    meta: {
-      title: '仓库调拨',
-      redblue: false,
-      keepAlive: false
-    }
-  },
-  {
-    path: '/box_form',
-    name: 'box_form',
-    component: () => import('@/views/box/form'),
-    meta: {
-      title: '拆箱',
-      redblue: false,
-      keepAlive: false
-    }
-  },
-  {
     path: '/stock',
     name: 'stock',
     component: Stock,
     meta: {
       title: '库存查询',
-      redblue: false,
-      keepAlive: false
-    }
-  },
-  {
-    path: '/mould',
-    name: 'mould',
-    component: Mould,
-    meta: {
-      title: '模具查询',
       redblue: false,
       keepAlive: false
     }

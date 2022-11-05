@@ -49,7 +49,6 @@
               placeholder="扫描或录入货位"
               v-show="control.usePos"
               id="ele_cPosName"
-              @focus="onFocus('ele_cPosName')"
               @keyup.enter="queryPos"
             >
             </van-field>
@@ -61,10 +60,9 @@
               ref="ele_cBarcode"
               v-model="form.cBarcode"
               autocomplete="off"
-              placeholder="扫描或录入箱号条码"
+              placeholder="扫描或录入条码"
               clearable
               id="ele_cBarcode"
-              @focus="onFocus('ele_cBarcode')"
               @keyup.enter="queryInv"
             >
             </van-field>
@@ -115,7 +113,8 @@
               v-model="form.cInvStd"
               readonly
               placeholder="规格型号"
-            ></van-field>
+            >
+            </van-field>
             <van-field
               name="cComUnitName"
               label="单位"
@@ -166,22 +165,13 @@
               v-model="form.iQuantity"
               class="iQuantity"
               id="ele_iQuantity"
-              readonly
               @keyup.enter="inputQuantity"
             ></van-field>
           </div>
 
           <div class="btns">
             <van-button class="btn" size="small" @click="doClear">清空</van-button>
-            <!-- <van-button
-              class="btn"
-              size="small"
-              color="#008577"
-              type="info"
-              @click="inputQuantity"
-              :disabled="forbiddenSub"
-              >确定</van-button
-            > -->
+            <van-button class="btn submit" size="small" @click="inputQuantity">保存</van-button>
           </div>
         </div>
       </van-tab>
@@ -196,7 +186,7 @@
               class="van-hairline--bottom"
               @click="onDelete(index)"
             >
-              <li style="padding: 2px">箱号：{{ item.cBoxNO }}</li>
+              <!-- <li style="padding: 2px">箱号：{{ item.cBoxNO }}</li> -->
               <li style="padding: 2px; width: 80%; display: inline-flex; justify-content: space-between">
                 <div>生产订单：{{ item.cSourceBillNo }}</div>
                 <div>订单行号：{{ item.cSourceBillEntryRowNo }}</div>
@@ -242,12 +232,13 @@ import { newGuid, floatAdd, floatSub } from '@/utils'
 import warehouse from '@/components/warehouse'
 import deptpartment from '@/components/deptpartment'
 import rd from '@/components/rd'
-import { getWarehouse, getDepartment, getRdStyle, getPosition, getBox } from '@/api/base'
+import { getWarehouse, getDepartment, getRdStyle, getPosition, getInventory } from '@/api/base'
 import dayjs from 'dayjs'
 export default {
   name: `pin_form`,
   components: { warehouse, deptpartment, rd },
   data() {
+    this.confirm = 0
     return {
       active: 0,
       queryForm: {},
@@ -345,22 +336,36 @@ export default {
         }
       }
 
-      const exist = this.cacheList.filter(f => {
-        return f.cBoxNO == this.form.cBoxNO
-      })
-      if (exist.length > 0) {
-        return this.$toast({
-          type: 'fail',
-          message: '当前箱号已扫描!',
-          onOpened: () => {
-            this.form.cBarcode = ''
-            this.curEle = 'ele_cBarcode'
-            this.setFocus()
-          }
-        })
-      }
+      // const exist = this.cacheList.filter(f => {
+      //   return f.cBoxNO == this.form.cBoxNO
+      // })
+      // if (exist.length > 0) {
+      //   return this.$toast({
+      //     type: 'fail',
+      //     message: '当前条码已扫描!',
+      //     onOpened: () => {
+      //       this.form.cBarcode = ''
+      //       this.curEle = 'ele_cBarcode'
+      //       this.setFocus()
+      //     }
+      //   })
+      // }
 
-      this.cacheList.push(Object.assign({}, this.form))
+      const position = this.cacheList.findIndex(f => {
+        return (
+          f.cSourceBillID == this.form.cSourceBillID &&
+          f.cSourceBillEntryID == this.form.cSourceBillEntryID &&
+          f.cInvCode == this.form.cInvCode &&
+          f.cBatch == this.form.cBatch
+        )
+      })
+      if (position > -1) {
+        let r = this.cacheList[position]
+        r.iQuantity = floatAdd(r.iQuantity, this.form.iQuantity)
+        this.$set(this.cacheList, position, Object.assign({}, r))
+      } else {
+        this.cacheList.push(Object.assign({}, this.form))
+      }
 
       this.clearForm()
     },
@@ -404,7 +409,6 @@ export default {
               {
                 Entry: this.cacheList.map(m => {
                   return {
-                    cBoxNO: m.cBoxNO,
                     cSourceBillID: m.cSourceBillID,
                     cSourceBillNo: m.cSourceBillNo,
                     cSourceBillEntryID: m.cSourceBillEntryID,
@@ -429,10 +433,8 @@ export default {
                 message: '提交成功!',
                 onClose: () => {
                   this.submitLoading = false
+                  this.cacheList = []
                   this.$router.go(-1)
-                  // this.cacheList = []
-                  // this.active = 0
-                  // this.cSign = newGuid()
                 }
               })
             })
@@ -538,7 +540,7 @@ export default {
       if (this.form.cBarcode == '') {
         return this.$toast({
           type: 'fail',
-          message: '请先扫描箱号条码',
+          message: '请先扫描产品条码',
           onOpened: () => {
             this.form.cBarcode = ''
             this.setFocus()
@@ -546,23 +548,23 @@ export default {
         })
       }
 
-      const exist = this.cacheList.filter(f => {
-        return f.cBoxNO == this.form.cBarcode
-      })
-      if (exist.length > 0) {
-        return this.$toast({
-          type: 'fail',
-          message: '当前箱号已扫描!',
-          onOpened: () => {
-            this.form.cBarcode = ''
-            this.curEle = 'ele_cBarcode'
-            this.setFocus()
-          }
-        })
-      }
+      // const exist = this.cacheList.filter(f => {
+      //   return f.cBoxNO == this.form.cBarcode
+      // })
+      // if (exist.length > 0) {
+      //   return this.$toast({
+      //     type: 'fail',
+      //     message: '当前条码已扫描!',
+      //     onOpened: () => {
+      //       this.form.cBarcode = ''
+      //       this.curEle = 'ele_cBarcode'
+      //       this.setFocus()
+      //     }
+      //   })
+      // }
 
-      getBox({
-        FBoxNo: this.form.cBarcode,
+      getInventory({
+        cBarcode: this.form.cBarcode,
         cWhCode: this.cWhCode,
         cType: '1',
         FROB: this.queryForm.redblue == '1' ? '1' : '-1'
@@ -585,20 +587,20 @@ export default {
               iStockQuantity,
               iQuantity,
               iGroupType,
-              FMOID,
-              FMOCode,
-              FMODID,
-              FMORowNo
+              iMOID,
+              cMOCode,
+              iMOAutoID,
+              cMORowNo
             } = Data[0]
 
             this.control.useBatch = bInvBatch //是否批次管理
             this.control.useQuality = bInvQuality //是否保质期管理
             this.control.groupType = iGroupType //单位组类别 0 无换算、 1 固定换算、2 浮动换算
 
-            this.form.cSourceBillID = FMOID //源单ID
-            this.form.cSourceBillNo = FMOCode //源单单号
-            this.form.cSourceBillEntryID = FMODID //源单表体ID
-            this.form.cSourceBillEntryRowNo = FMORowNo //源单表体行号
+            this.form.cSourceBillID = iMOID //源单ID
+            this.form.cSourceBillNo = cMOCode //源单单号
+            this.form.cSourceBillEntryID = iMOAutoID //源单表体ID
+            this.form.cSourceBillEntryRowNo = cMORowNo //源单表体行号
 
             this.form.cInvCode = cInvCode
             this.form.cInvName = cInvName
@@ -630,8 +632,7 @@ export default {
             this.form.iNum = 0
 
             this.form.cBarcode = ''
-
-            this.onSubmit()
+            this.curEle = 'ele_iQuantity'
           }
         })
         .catch(err => {
@@ -643,7 +644,7 @@ export default {
         })
     },
     inputQuantity() {
-      if (this.form.iQuantity == '') {
+      if (this.form.iQuantity == '' || this.form.iQuantity == '0') {
         this.form.iQuantity = ''
         this.curEle = 'ele_iQuantity'
         return this.$toast({
@@ -654,6 +655,7 @@ export default {
           }
         })
       }
+
       if (this.form.cSourceBillID == '') {
         this.form.iQuantity = ''
         if (this.form.cPosCode == '') {
@@ -663,7 +665,7 @@ export default {
         }
         return this.$toast({
           type: 'fail',
-          message: '请按流程进行扫描!',
+          message: '没有获取到订单信息,请按流程进行扫描!',
           onOpened: () => {
             this.setFocus()
           }
@@ -673,26 +675,34 @@ export default {
       this.onSubmit()
     },
     clearForm() {
-      // for (const key in this.form) {
-      //   if (this.$store.getters.numProps.includes(key)) {
-      //     this.form[key] = 0
-      //   } else {
-      //     this.form[key] = ''
-      //   }
-      // }
+      for (const key in this.form) {
+        if (this.$store.getters.numProps.includes(key)) {
+          this.form[key] = 0
+        } else {
+          this.form[key] = ''
+        }
+      }
       this.form.cBarcode = ''
-      // this.control.useBatch = false
-      // this.control.useQuality = false
-      // this.control.groupType = 1
-      // if (this.control.usePos) {
-      //   this.curEle = 'ele_cPosName'
-      // } else {
-      //   this.curEle = 'ele_cBarcode'
-      // }
+      this.control.useBatch = false
+      this.control.useQuality = false
+      this.control.groupType = 1
+      if (this.control.usePos) {
+        this.curEle = 'ele_cPosName'
+      } else {
+        this.curEle = 'ele_cBarcode'
+      }
       this.setFocus()
     },
     onFocus(e) {
-      window.localStorage.setItem('curEle', e)
+      var dom = document.activeElement.id
+      this.curEle = dom
+      const domTarget = document.querySelector('#' + dom)
+      if (domTarget != void 0) {
+        setTimeout(function () {
+          domTarget.scrollIntoView(false)
+        }, 300)
+      }
+      window.localStorage.setItem('curEle', dom)
     },
     checkStock() {
       const l1 = this.cacheList
@@ -732,18 +742,34 @@ export default {
     },
     forbiddenSub() {
       return this.form.cBoxNO == '' || this.form.iQuantity == '' || this.form.iQuantity == 0
+    },
+    defWhCode() {
+      return this.$store.getters.defWhCode || ''
     }
   },
   created() {
     this.queryForm = Object.assign({}, this.$route.query)
   },
   mounted() {
+    window.keyboardChange = state => {
+      if (state) {
+        if (this.activeElement != '') {
+          this.onFocus()
+        } else {
+        }
+      }
+    }
+
     setTimeout(() => {
       getWarehouse({})
         .then(({ Data }) => {
           this.sources.warehouseList = Data
           if (Data.length > 0) {
-            const { cWhCode, cWhName, bWhPos } = Data[0]
+            const f = Data.filter(f => {
+              return f.cWhCode == this.defWhCode
+            })
+            const { cWhCode, cWhName, bWhPos } = f.length > 0 ? f[0] : { cWhCode: '', cWhName: '', bWhPos: false }
+
             this.headForm.cWhCode = cWhCode
             this.headForm.cWhName = cWhName
 
@@ -778,7 +804,7 @@ export default {
           this.sources.rdList = Data
           if (Data.length > 0) {
             const { cRdCode, cRdName } = Data.filter(f => {
-              return f.cRdCode == '12'
+              return f.cRdCode == '102'
             })[0]
             this.headForm.cRdCode = cRdCode
             this.headForm.cRdName = cRdName
@@ -786,24 +812,59 @@ export default {
         })
         .catch(err => {})
     }, 200)
+  },
+  beforeRouteLeave(to, from, next) {
+    if (this.confirm != 0) {
+      delete window.keyboardChange
+      next(false)
+    }
+    if (this.cacheList.length <= 0) {
+      delete window.keyboardChange
+      next()
+    } else {
+      setTimeout(() => {
+        this.confirm = this.$dialog
+          .confirm({
+            title: '提示',
+            message: '您确定要退出当前功能吗?'
+          })
+          .then(() => {
+            delete window.keyboardChange
+            next()
+          })
+          .catch(() => {
+            delete window.keyboardChange
+            next(false)
+          })
+      }, 200)
+    }
   }
 }
 </script>
 <style lang="scss" scoped>
 .container {
   height: 100vh;
+
   .list0 .btns {
     display: flex;
     margin-top: 3px;
     margin-bottom: 20px;
     justify-content: space-around;
+
     .btn {
-      width: 50%;
+      width: 45%;
+      border-radius: 3px;
+    }
+    .submit {
+      color: #fff;
+      background-color: rgb(0, 133, 119);
     }
   }
+
   .postForm {
     .van-cell {
       padding: 8px 10px;
+
       ::v-deep .van-cell__title {
         font-size: 15px;
         color: #333;
@@ -811,18 +872,22 @@ export default {
       }
     }
   }
+
   .list0,
   .list {
     height: calc(100vh - 210px);
     overflow: scroll;
   }
+
   .list1 {
     height: calc(100vh - 260px);
     overflow: scroll;
   }
+
   .form {
     width: 94vw;
   }
+
   .header {
     .item {
       padding: 8px 10px;

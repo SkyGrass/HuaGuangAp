@@ -27,7 +27,7 @@ router.beforeEach((to, from, next) => {
   if (to.meta != void 0) {
     if (to.meta.redblue && to.query.redblue == void 0) {
       store.dispatch('setShowRedBlue', to.meta.redblue)
-      store.dispatch('setTargetUrl', to.name)
+      store.dispatch('setTargetUrl', to.name) 
       return false
     } else {
       next()

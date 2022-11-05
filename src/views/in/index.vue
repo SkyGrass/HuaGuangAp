@@ -89,7 +89,7 @@
 </template>
 <script>
 import dayjs from 'dayjs'
-import { getPuArrivalHead } from '@/api/pap'
+import { getPOHead } from '@/api/in'
 export default {
   name: `in`,
   data() {
@@ -135,7 +135,7 @@ export default {
   methods: {
     onLoad() {
       this.sourceList = []
-      getPuArrivalHead(
+      getPOHead(
         Object.assign(
           {},
           { dBeginDate: this.startDateStr, dEndDate: this.endDateStr, FRob: this.rob },
@@ -202,7 +202,7 @@ export default {
   }
 }
 </script>
-<style lang="scss">
+<style lang="scss" scoped>
 .container {
   height: 100vh;
   .bottom {

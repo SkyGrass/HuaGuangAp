@@ -12,7 +12,6 @@ const { defineConfig } = require('@vue/cli-service')
 
 module.exports = defineConfig({
   publicPath: '/web/', // 署应用包时的基本 URL。 vue-router hash 模式使用
-  //  publicPath: '/app/', //署应用包时的基本 URL。  vue-router history模式使用
   outputDir: 'dist', //  生产环境构建文件的目录
   assetsDir: 'static', //  outputDir的静态资源(js、css、img、fonts)目录
   lintOnSave: !IS_PROD,
@@ -27,17 +26,6 @@ module.exports = defineConfig({
         errors: true
       }
     }
-    // proxy: {
-    //   //配置跨域
-    //   '/api': {
-    //       target: "https://test.xxx.com",
-    //       // ws:true,
-    //       changOrigin:true,
-    //       pathRewrite:{
-    //           '^/api':'/'
-    //       }
-    //   }
-    // }
   },
   css: {
     extract: IS_PROD, // 是否将组件中的 CSS 提取至一个独立的 CSS 文件中 (而不是动态注入到 JavaScript 中的 inline 代码)。
@@ -56,12 +44,6 @@ module.exports = defineConfig({
   },
   configureWebpack: config => {
     config.name = name
-
-    // 为生产环境修改配置...
-    // if (IS_PROD) {
-    //   // externals
-    //   config.externals = externals
-    // }
   },
 
   chainWebpack: config => {
@@ -76,21 +58,6 @@ module.exports = defineConfig({
       .set('views', resolve('src/views'))
       .set('components', resolve('src/components'))
 
-    /**
-     * 添加CDN参数到htmlWebpackPlugin配置中
-     */
-    // config.plugin('html').tap(args => {
-    //   if (IS_PROD) {
-    //     args[0].cdn = cdn.build
-    //   } else {
-    //     args[0].cdn = cdn.dev
-    //   }
-    //   return args
-    //  })
-
-    /**
-     * 设置保留空格
-     */
     config.module
       .rule('vue')
       .use('vue-loader')
@@ -100,31 +67,12 @@ module.exports = defineConfig({
         return options
       })
       .end()
-    /**
-     * 打包分析
-     */
-    if (IS_PROD) {
-      config.plugin('webpack-report').use(BundleAnalyzerPlugin, [
-        {
-          analyzerMode: 'static'
-        }
-      ])
-    }
+
     config
       // https://webpack.js.org/configuration/devtool/#development
       .when(!IS_PROD, config => config.devtool('cheap-source-map'))
 
     config.when(IS_PROD, config => {
-      config
-        .plugin('ScriptExtHtmlWebpackPlugin')
-        .after('html')
-        .use('script-ext-html-webpack-plugin', [
-          {
-            // 将 runtime 作为内联引入不单独存在
-            inline: /runtime\..*\.js$/
-          }
-        ])
-        .end()
       config.optimization.splitChunks({
         chunks: 'all',
         cacheGroups: {

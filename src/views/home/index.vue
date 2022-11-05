@@ -49,11 +49,13 @@ export default {
     }
   },
   methods: {
-    redirect({ path }) {
+    redirect({ path, whCode }) {
+      this.$store.dispatch('setDefWhCode', whCode)
       this.$router.push({
         path: path,
         query: {
-          t: new Date() * 1
+          t: new Date() * 1,
+          whCode: whCode
         }
       })
     }
@@ -61,7 +63,13 @@ export default {
   mounted() {
     getMenu({}).then(({ Data }) => {
       this.list = Data.map(m => {
-        return { id: m.FItemID, icon: m.FImage || 'icon_list.png', label: m.FName, path: m.FUrl }
+        return {
+          id: m.FItemID,
+          icon: m.FImage || 'icon_list.png',
+          label: m.FName,
+          path: m.FUrl,
+          whCode: m.FDefaultWhCode
+        }
       })
     })
   }

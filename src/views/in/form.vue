@@ -20,6 +20,7 @@
           label="入库方式"
           placeholder="请选择入库方式"
           is-link
+          v-if="false"
           @click="openRd"
         />
         <van-field
@@ -30,8 +31,10 @@
           label="部门"
           placeholder="请选择部门"
           is-link
+          v-if="false"
           @click="openDeptpartment"
         />
+        <van-field class="item" v-model="headForm.cBillNo" name="cBillNo" label="单号" placeholder="单号" />
         <van-field class="item" v-model="headForm.cMemo" name="cMemo" label="备注" placeholder="备注" />
       </van-form>
     </div>
@@ -49,7 +52,6 @@
               placeholder="扫描或录入货位"
               v-show="control.usePos"
               id="ele_cPosName"
-              @focus="onFocus('ele_cPosName')"
               @keyup.enter="queryPos"
             ></van-field>
 
@@ -62,7 +64,6 @@
               autocomplete="off"
               placeholder="扫描或录入存货条码"
               id="ele_cBarcode"
-              @focus="onFocus('ele_cBarcode')"
               @keyup.enter="queryInv"
             ></van-field>
             <van-field
@@ -88,7 +89,8 @@
               v-model="form.cInvStd"
               readonly
               placeholder="规格型号"
-            ></van-field>
+            >
+            </van-field>
             <van-field
               name="cComUnitName"
               label="单位"
@@ -134,10 +136,10 @@
             ></van-field>
             <van-field
               name="iPlanQuantity"
-              label="到货数量"
+              label="订单数量"
               ref="ele_iPlanQuantity"
               v-model="form.iPlanQuantity"
-              placeholder="到货数量"
+              placeholder="订单数量"
               readonly
             >
             </van-field>
@@ -156,23 +158,14 @@
               ref="ele_iQuantity"
               v-model="form.iQuantity"
               clickable
+              autocomplete="off"
               id="ele_iQuantity"
-              @focus="onFocus1('ele_iQuantity')"
-              @blur="onBlur"
               @keyup.enter="inputQuantity"
             ></van-field>
           </div>
           <div class="btns">
             <van-button class="btn" size="small" @click="doClear">清空</van-button>
-            <!-- <van-button
-              class="btn"
-              size="small"
-              color="#008577"
-              type="info"
-              @click="inputQuantity"
-              :disabled="forbiddenSub"
-              >确定</van-button
-            > -->
+            <van-button class="btn submit" size="small" @click="inputQuantity">保存</van-button>
           </div>
         </div>
       </van-tab>
@@ -252,8 +245,7 @@
   </div>
 </template>
 <script>
-import { getPuArrival } from '@/api/pap'
-import { savePurStockIn } from '@/api/in'
+import { savePurStockIn, getPo } from '@/api/in'
 import { newGuid, floatAdd, floatSub } from '@/utils'
 import warehouse from '@/components/warehouse'
 import deptpartment from '@/components/deptpartment'
@@ -278,6 +270,7 @@ export default {
         cDepCode: '',
         cDepName: '',
         cMemo: '',
+        cBillNo: '',
         cSource: '采购到货单',
         FROB: '1'
       },
@@ -324,7 +317,8 @@ export default {
         cSourceBillNo: '',
         cSourceBillEntryID: ''
       },
-      curEle: ''
+      curEle: '',
+      keyboardIsShow: false
     }
   },
   watch: {
@@ -337,9 +331,14 @@ export default {
   methods: {
     onLoad() {
       this.sourceList = []
-      getPuArrival({ cFilter: this.queryForm.ID, FROB: this.queryForm.bRob })
+      getPo({ cFilter: this.queryForm.ID, FROB: this.queryForm.bRob })
         .then(({ Data }) => {
-          this.sourceList = Data
+          this.sourceList = Data.map(f => {
+            if (f.cBatch == void 0) {
+              f.cBatch = ''
+            }
+            return f
+          })
         })
         .catch(err => {})
       this.loading = false
@@ -375,6 +374,7 @@ export default {
           })
         }
       }
+
       if (this.checkPlan()) {
         this.curEle = 'ele_iQuantity'
         return this.$toast({
@@ -404,6 +404,9 @@ export default {
       this.clearForm()
     },
     onSave() {
+      if (this.headForm.cBillNo == '') {
+        return this.$toast({ type: 'fail', message: '请先录入或扫描单号!' })
+      }
       this.$dialog
         .confirm({
           title: '提示',
@@ -431,7 +434,8 @@ export default {
                   cRdCode: m.cRdCode,
                   cDepCode: m.cDepCode,
                   cMemo: m.cMemo,
-                  cSource: m.cSource
+                  cSource: m.cSource,
+                  cBillNo: m.cBillNo
                 }
               })[0],
               {
@@ -460,12 +464,9 @@ export default {
                 type: 'success',
                 message: '提交成功!',
                 onClose: () => {
+                  this.submitLoading = false
+                  this.cacheList = []
                   this.$router.go(-1) //回退1个
-                  // this.submitLoading = false
-                  // this.onLoad()
-                  // this.cacheList = []
-                  // this.active = 0
-                  // this.cSign = newGuid()
                 }
               })
             })
@@ -732,39 +733,16 @@ export default {
       }
       this.setFocus()
     },
-    onFocus1(e) {
-      this.curEle = 'ele_iQuantity'
-      console.log('onFocus1====' + this.curEle)
-      window.localStorage.setItem('curEle', e)
-      const container = document.querySelector('.app-container')
-      container.style.paddingBottom = '70px'
-
-      const dom = document.querySelector('.inputForm')
-      dom.style.height = '130px'
-      dom.style.overflow = 'auto'
-      const domTarget = document.querySelector('#ele_iQuantity')
-      if (domTarget != void 0) {
-        domTarget.scrollIntoView(true)
-      }
-    },
-    onBlur() {
-      const dom = document.querySelector('.inputForm')
-      dom.style.height = ''
-      dom.style.overflow = ''
-
-      const container = document.querySelector('.app-container')
-      container.style.paddingBottom = ''
-
-      setTimeout(() => {
-        var fdom = window.localStorage.getItem('curEle')
-        const domTarget = document.querySelector('#' + fdom)
-        if (domTarget != void 0) {
-          domTarget.scrollIntoView(true)
-        }
-      }, 100)
-    },
     onFocus(e) {
-      window.localStorage.setItem('curEle', e)
+      var dom = document.activeElement.id
+      this.curEle = dom
+      const domTarget = document.querySelector('#' + dom)
+      if (domTarget != void 0) {
+        setTimeout(function () {
+          domTarget.scrollIntoView(false)
+        }, 300)
+      }
+      window.localStorage.setItem('curEle', dom)
     },
     checkPlan() {
       const l1 = this.cacheList
@@ -784,7 +762,7 @@ export default {
         .filter(f => {
           return f.cInvCode == this.form.cInvCode && f.cBatch == this.form.cBatch
         })
-        .map(m => m.iQuantity)
+        .map(m => m.iQuantity2)
       const source_total = floatAdd(
         source.reduce((sum, item) => {
           return floatAdd(sum, item)
@@ -832,6 +810,9 @@ export default {
     },
     forbiddenSub() {
       return this.form.cSourceBillID == '' || this.form.iQuantity == '' || this.form.iQuantity == 0
+    },
+    defWhCode() {
+      return this.$store.getters.defWhCode || ''
     }
   },
   created() {
@@ -840,15 +821,12 @@ export default {
   mounted() {
     this.onLoad()
 
-    if (window.iQuantityFocus == void 0) {
-      window.iQuantityFocus = () => {
-        this.onFocus1('ele_iQuantity')
-      }
-    }
-
-    if (window.iQuantityBlure == void 0) {
-      window.iQuantityBlure = () => {
-        this.onBlur()
+    window.keyboardChange = state => {
+      if (state) {
+        if (this.activeElement != '') {
+          this.onFocus()
+        } else {
+        }
       }
     }
 
@@ -857,7 +835,10 @@ export default {
         .then(({ Data }) => {
           this.sources.warehouseList = Data
           if (Data.length > 0) {
-            const { cWhCode, cWhName, bWhPos } = Data[0]
+            const f = Data.filter(f => {
+              return f.cWhCode == this.defWhCode
+            })
+            const { cWhCode, cWhName, bWhPos } = f.length > 0 ? f[0] : { cWhCode: '', cWhName: '', bWhPos: false }
             this.headForm.cWhCode = cWhCode
             this.headForm.cWhName = cWhName
 
@@ -891,12 +872,9 @@ export default {
         .then(({ Data }) => {
           this.sources.rdList = Data
           if (Data.length > 0) {
-            const { cRdCode, cRdName } =
-              this.queryForm.cRdCode != ''
-                ? Data.filter(f => {
-                    return f.cRdCode == this.queryForm.cRdCode
-                  })[0]
-                : Data[0]
+            const { cRdCode, cRdName } = Data.filter(f => {
+              return f.cRdCode == (this.queryForm.cRdCode || '101')
+            })[0]
             this.headForm.cRdCode = cRdCode
             this.headForm.cRdName = cRdName
           }
@@ -906,25 +884,25 @@ export default {
   },
   beforeRouteLeave(to, from, next) {
     if (this.confirm != 0) {
+      delete window.keyboardChange
       next(false)
     }
     if (this.cacheList.length <= 0) {
-      delete window.iQuantityFocus
-      delete window.iQuantityBlure
+      delete window.keyboardChange
       next()
     } else {
       setTimeout(() => {
-        this.$dialog
+        this.confirm = this.$dialog
           .confirm({
             title: '提示',
             message: '您确定要退出当前功能吗?'
           })
           .then(() => {
-            delete window.iQuantityFocus
-            delete window.iQuantityBlure
+            delete window.keyboardChange
             next()
           })
           .catch(() => {
+            delete window.keyboardChange
             next(false)
           })
       }, 200)
@@ -935,18 +913,27 @@ export default {
 <style lang="scss" scoped>
 .container {
   height: 100vh;
+
   .list0 .btns {
     display: flex;
     margin-top: 3px;
     margin-bottom: 20px;
     justify-content: space-around;
+
     .btn {
-      width: 50%;
+      width: 45%;
+      border-radius: 3px;
+    }
+    .submit {
+      color: #fff;
+      background-color: rgb(0, 133, 119);
     }
   }
+
   .postForm {
     .van-cell {
       padding: 8px 10px;
+
       ::v-deep .van-cell__title {
         font-size: 15px;
         color: #333;
@@ -954,22 +941,27 @@ export default {
       }
     }
   }
+
   .list0,
   .list {
     height: calc(100vh - 210px);
     overflow: scroll;
   }
+
   .sourceList {
     height: calc(100vh - 180px);
     overflow: scroll;
   }
+
   .list1 {
     height: calc(100vh - 260px);
     overflow: scroll;
   }
+
   .form {
     width: 94vw;
   }
+
   .header {
     .item {
       padding: 8px 10px;

@@ -12,7 +12,7 @@
           is-link
           @click="openWarehouse"
         /> -->
-        <van-field label="启用货位" placeholder="启用货位">
+        <!-- <van-field label="启用货位" placeholder="启用货位">
           <template #input>
             <van-checkbox
               checked-color="#008577"
@@ -20,7 +20,7 @@
               shape="square"
               size="small"
             ></van-checkbox> </template
-        ></van-field>
+        ></van-field> -->
         <van-field
           type="text"
           name="cBarcode"
@@ -30,7 +30,6 @@
           autocomplete="off"
           placeholder="扫描或录入存货条码"
           id="ele_cBarcode"
-          @focus="onFocus('ele_cBarcode')"
           @keyup.enter="queryInv"
         ></van-field>
         <van-field
@@ -278,7 +277,15 @@ export default {
         })
     },
     onFocus(e) {
-      window.localStorage.setItem('curEle', e)
+      var dom = document.activeElement.id
+      this.curEle = dom
+      const domTarget = document.querySelector('#' + dom)
+      if (domTarget != void 0) {
+        setTimeout(function () {
+          domTarget.scrollIntoView(false)
+        }, 300)
+      }
+      window.localStorage.setItem('curEle', dom)
     }
   },
   computed: {
@@ -306,6 +313,9 @@ export default {
           })
         }
       })
+    },
+    defWhCode() {
+      return this.$store.getters.defWhCode || ''
     }
   },
   created() {},
@@ -314,8 +324,12 @@ export default {
       getWarehouse({})
         .then(({ Data }) => {
           this.sources.warehouseList = Data
-          if (Data.length > 0) {
-            const { cWhCode, cWhName, bWhPos } = Data[0]
+
+          if (Data.length > 0) { 
+            const f = Data.filter(f => {
+              return f.cWhCode == this.defWhCode
+            })
+            const { cWhCode, cWhName, bWhPos } = f.length > 0 ? f[0] : { cWhCode: '', cWhName: '', bWhPos: false }
             this.cWhCode = cWhCode
             this.cWhName = cWhName
 
@@ -331,6 +345,19 @@ export default {
 
     this.curEle = 'ele_cBarcode'
     this.setFocus()
+
+    window.keyboardChange = state => {
+      if (state) {
+        if (this.activeElement != '') {
+          this.onFocus()
+        } else {
+        }
+      }
+    }
+  },
+  beforeRouteLeave(to, from, next) {
+    delete window.keyboardChange
+    next()
   }
 }
 </script>
