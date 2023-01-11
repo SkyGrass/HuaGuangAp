@@ -32,6 +32,16 @@
           is-link
           @click="openDeptpartment"
         />
+        <van-field
+          class="item"
+          v-model="headForm.cPersonName"
+          readonly
+          name="cPersonName"
+          label="领料人"
+          placeholder="请选择领料人"
+          is-link
+          @click="openPerson"
+        />
         <van-field class="item" v-model="headForm.cMemo" name="cMemo" label="备注" placeholder="备注" />
       </van-form>
     </div>
@@ -237,6 +247,7 @@
       @choose="pickDeptpartment"
       @cancel="cancelPicker"
     />
+    <person ref="person" :source="sources.personList" @choose="pickPerson" @cancel="cancelPicker" />
     <rd ref="rd" :source="sources.rdList" @choose="pickRd" @cancel="cancelPicker" />
     <input class="bottom" v-show="false" readonly />
   </div>
@@ -246,12 +257,13 @@ import { saveMaterialOut, getMo } from '@/api/out'
 import { newGuid, floatAdd, floatSub } from '@/utils'
 import warehouse from '@/components/warehouse'
 import deptpartment from '@/components/deptpartment'
+import person from '@/components/person'
 import rd from '@/components/rd'
-import { getWarehouse, getDepartment, getRdStyle, getPosition, getInventory } from '@/api/base'
+import { getWarehouse, getDepartment, getPerson, getRdStyle, getPosition, getInventory } from '@/api/base'
 import dayjs from 'dayjs'
 export default {
   name: `out_form`,
-  components: { warehouse, deptpartment, rd },
+  components: { warehouse, deptpartment, rd, person },
   data() {
     this.confirm = 0
     return {
@@ -266,6 +278,10 @@ export default {
 
         cDepCode: '',
         cDepName: '',
+
+        cPersonCode: '',
+        cPersonName: '',
+
         cMemo: '',
         cSource: '材料出库单',
         FROB: '1'
@@ -279,6 +295,7 @@ export default {
       sources: {
         warehouseList: [],
         departmentList: [],
+        personList: [],
         rdList: []
       },
       control: {
@@ -399,6 +416,9 @@ export default {
       if (this.headForm.cDepName == '') {
         return this.$toast({ type: 'fail', message: '请先选择部门!' })
       }
+      if (this.headForm.cPersonCode == '') {
+        return this.$toast({ type: 'fail', message: '请先选择领料人!' })
+      }
       this.$dialog
         .confirm({
           title: '提示',
@@ -425,6 +445,7 @@ export default {
                   cWhCode: m.cWhCode,
                   cRdCode: m.cRdCode,
                   cDepCode: m.cDepCode,
+                  cPersonCode: m.cPersonCode,
                   cMemo: m.cMemo,
                   cSource: m.cSource
                 }
@@ -476,6 +497,9 @@ export default {
     openDeptpartment() {
       this.$refs.deptpartment.open()
     },
+    openPerson() {
+      this.$refs.person.open()
+    },
     openRd() {
       this.$refs.rd.open()
     },
@@ -491,6 +515,20 @@ export default {
     pickDeptpartment({ cDepCode, cDepName }) {
       this.headForm.cDepName = cDepName
       this.headForm.cDepCode = cDepCode
+
+      getPerson({ cDeptCode: cDepCode })
+        .then(({ Data: _Data }) => {
+          if (_Data.length > 0) {
+            this.sources.personList = _Data
+            this.headForm.cPersonCode = _Data[0].cPersonCode
+            this.headForm.cPersonName = _Data[0].cPersonName
+          }
+        })
+        .catch(err => {})
+    },
+    pickPerson({ cPersonCode, cPersonName }) {
+      this.headForm.cPersonCode = cPersonCode
+      this.headForm.cPersonName = cPersonName
     },
     pickRd({ cRdCode, cRdName }) {
       this.headForm.cRdCode = cRdCode
@@ -853,6 +891,16 @@ export default {
             })[0]
             this.headForm.cDepCode = cDepCode
             this.headForm.cDepName = cDepName
+
+            getPerson({ cDeptCode: cDepCode })
+              .then(({ Data: _Data }) => {
+                if (_Data.length > 0) {
+                  this.sources.personList = _Data
+                  this.headForm.cPersonCode = _Data[0].cPersonCode
+                  this.headForm.cPersonName = _Data[0].cPersonName
+                }
+              })
+              .catch(err => {})
           }
         })
         .catch(err => {})
